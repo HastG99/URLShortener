@@ -16,7 +16,7 @@ A powerful and feature-rich URL shortener service built with Spring Boot. This a
 - **RESTful API**: Simple API for integration
 
 ![Analytics Dashboard Image 1](images/stats1.png)
-![Analytics Dashboard Image 2](images/stats1.png)
+![Analytics Dashboard Image 2](images/stats2.png)
 
 ## Tech Stack
 
