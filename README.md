@@ -94,14 +94,6 @@ mvn test
 mvn clean package
 ```
 
-## Screenshots
-
-(Please add actual screenshots of:)
-1. Main page with URL creation form
-2. Statistics page showing analytics charts
-3. Error page examples
-4. Mobile responsive views
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
