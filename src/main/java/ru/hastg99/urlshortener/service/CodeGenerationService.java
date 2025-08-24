@@ -21,6 +21,7 @@ public class CodeGenerationService {
     public String generateUniqueCode(int length, CodeUniquenessChecker uniquenessChecker, int maxRetries) {
         for (int i = 0; i < maxRetries; i++) {
             String code = generateRandomCode(length);
+
             if (uniquenessChecker.isCodeUnique(code)) {
                 return code;
             }

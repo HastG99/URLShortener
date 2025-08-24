@@ -51,9 +51,10 @@ public class LinkService {
         // Генерация уникального короткого кода
         String shortCode = codeGenerationService.generateUniqueCode(
                 appConfig.getLink().getLength(),
-                linkRepository::existsByShortCode,
+                code -> !linkRepository.existsByShortCode(code),
                 5
         );
+
 
         // Создание и сохранение ссылки
         Link link = new Link(originalUrl, shortCode);

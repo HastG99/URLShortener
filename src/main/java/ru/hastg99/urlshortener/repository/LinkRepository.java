@@ -15,6 +15,7 @@ import java.util.Optional;
 @Repository
 public interface LinkRepository extends JpaRepository<Link, Long> {
     Optional<Link> findByShortCode(String shortCode);
+
     boolean existsByShortCode(String shortCode);
 
     @Query("SELECT l FROM Link l WHERE l.expiresAt < :now")
