@@ -1,73 +1,147 @@
 package ru.hastg99.urlshortener.service;
 
 import jakarta.servlet.http.HttpServletRequest;
-import nl.basjes.parse.useragent.UserAgent;
-import nl.basjes.parse.useragent.UserAgentAnalyzer;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.hastg99.urlshortener.model.Link;
 import ru.hastg99.urlshortener.model.Visitor;
+import ru.hastg99.urlshortener.model.dto.*;
 import ru.hastg99.urlshortener.repository.VisitorRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class VisitorService {
 
-    @Autowired
-    private VisitorRepository visitorRepository;
+    private final VisitorRepository visitorRepository;
+    private final UserAgentParserService userAgentParserService;
+    private final GeoLocationService geoLocationService;
+    private final IpAddressService ipAddressService;
 
-    private final UserAgentAnalyzer uaa = UserAgentAnalyzer.newBuilder().hideMatcherLoadStats().withCache(10000).build();
+    public Visitor saveVisitorInfo(Link link, HttpServletRequest request) {
+        Visitor visitor = createVisitorFromRequest(link, request);
+        visitor = visitorRepository.save(visitor);
 
-    public void saveVisitorInfo(Link link, HttpServletRequest request) {
+        updateCountryAsync(visitor);
+        return visitor;
+    }
+
+    private Visitor createVisitorFromRequest(Link link, HttpServletRequest request) {
         Visitor visitor = new Visitor();
         visitor.setLink(link);
 
-        // 1. Получаем IP адрес
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = ipAddressService.getClientIpAddress(request);
         visitor.setIpAddress(ipAddress);
 
-        // 2. Получаем User-Agent
         String userAgentString = request.getHeader("User-Agent");
         visitor.setUserAgent(userAgentString);
 
-        // 3. Парсим User-Agent для получения OS, Browser и Device Type
-        UserAgent agent = uaa.parse(userAgentString);
-        visitor.setOperatingSystem(agent.getValue("OperatingSystemName"));
-        visitor.setBrowser(agent.getValue("AgentName"));
-        visitor.setDeviceType(agent.getValue("DeviceClass"));
+        UserAgentParserService.ParsedUserAgent parsedUserAgent = userAgentParserService.parse(userAgentString);
+        visitor.setOperatingSystem(parsedUserAgent.operatingSystem());
+        visitor.setBrowser(parsedUserAgent.browser());
+        visitor.setDeviceType(parsedUserAgent.deviceType());
 
-        // 4. Получаем Referrer
         String referrer = request.getHeader("Referer");
         visitor.setReferrer(referrer);
 
-        // 5. (Опционально) Определяем страну по IP. Пока пропустим.
-        // visitor.setCountry("Russia");
-
-        visitorRepository.save(visitor);
+        return visitor;
     }
 
-    private String getClientIpAddress(HttpServletRequest request) {
-        // Обход для получения реального IP за прокси (Nginx, Cloudflare)
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
+    @Async
+    public void updateCountryAsync(Visitor visitor) {
+        if (ipAddressService.isLocalIp(visitor.getIpAddress())) {
+            visitor.setCountry("Local");
+            visitorRepository.save(visitor);
+            return;
         }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
+
+        CompletableFuture<String> countryFuture = geoLocationService.getCountryCodeByIp(visitor.getIpAddress());
+        countryFuture.thenAccept(country -> {
+            visitor.setCountry(country);
+            visitorRepository.save(visitor);
+        });
     }
 
-    public List<Visitor> getVisitorsByLink(Link link) {
-        return visitorRepository.findByLinkOrderByVisitedAtDesc(link);
+    public List<VisitorDTO> getRecentVisitorsWithoutIp(Link link, int limit) {
+        List<Visitor> visitors = visitorRepository.findTop10ByLinkOrderByVisitedAtDesc(link, 10);
+
+        return visitors.stream().map(visitor -> {
+            VisitorDTO dto = new VisitorDTO();
+            dto.setId(visitor.getId());
+            dto.setCountry(visitor.getCountry());
+            dto.setDeviceType(visitor.getDeviceType());
+            dto.setOperatingSystem(visitor.getOperatingSystem());
+            dto.setBrowser(visitor.getBrowser());
+            dto.setReferrer(getDomainName(visitor.getReferrer()));
+            dto.setVisitedAt(visitor.getVisitedAt());
+            // Не устанавливаем IP!
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     public Long getVisitorCountByLink(Link link) {
         return visitorRepository.countByLink(link);
     }
+
+    public Map<String, Long> getCountryStats(Link link) {
+        return visitorRepository.countByCountry(link).stream()
+                .collect(Collectors.toMap(
+                        CountryStat::country,
+                        CountryStat::count
+                ));
+    }
+
+    public Map<String, Long> getBrowserStats(Link link) {
+        return visitorRepository.countByBrowser(link).stream()
+                .collect(Collectors.toMap(
+                        BrowserStat::browser,
+                        BrowserStat::count
+                ));
+    }
+
+    public Map<String, Long> getOsStats(Link link) {
+        return visitorRepository.countByOs(link).stream()
+                .collect(Collectors.toMap(
+                        OsStat::os,
+                        OsStat::count
+                ));
+    }
+
+    public Map<String, Long> getDeviceStats(Link link) {
+        return visitorRepository.countByDevice(link).stream()
+                .collect(Collectors.toMap(
+                        DeviceStat::deviceType,
+                        DeviceStat::count
+                ));
+    }
+
+    public Map<String, Long> getReferrerStats(Link link) {
+        return visitorRepository.countByReferrer(link).stream()
+                .collect(Collectors.toMap(
+                        stat -> getDomainName(stat.referrer()),
+                        ReferrerStat::count
+                ));
+    }
+
+    private String getDomainName(String url) {
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            String domain = uri.getHost();
+
+            return domain != null ? domain.startsWith("www.") ? domain.substring(4) : domain : "Direct";
+        } catch (Exception e) {
+            return "Direct";
+        }
+    }
+
 
 }

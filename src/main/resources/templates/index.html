@@ -1,20 +1,54 @@
-<!-- src/main/resources/templates/index.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>URL Shortener</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="url"], input[type="number"] {
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50; color: white; padding: 10px 15px;
+            border: none; border-radius: 4px; cursor: pointer;
+        }
+        .success { color: green; margin: 10px 0; }
+        .error { color: red; margin: 10px 0; }
+        .stats-link { display: block; margin-top: 10px; }
+    </style>
 </head>
 <body>
-<h1>Сократить ссылку</h1>
-<form method="post" action="/create">
-    <input type="url" name="originalUrl" placeholder="Введите длинную ссылку" required>
-    <button type="submit">Сократить</button>
-</form>
+<div class="container">
+    <h1>Сократить ссылку</h1>
 
-<div th:if="${shortUrl}">
-    <h3>Ваша короткая ссылка:</h3>
-    <a th:href="${shortUrl}" th:text="${shortUrl}"></a>
+    <div th:if="${message}" class="success" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <form method="post" action="/create">
+        <div class="form-group">
+            <label for="originalUrl">Длинная ссылка:</label>
+            <input type="url" id="originalUrl" name="originalUrl" placeholder="https://example.com" required>
+        </div>
+
+        <div class="form-group">
+            <label for="expirationDays">Срок действия (в днях, необязательно):</label>
+            <input type="number" id="expirationDays" name="expirationDays" min="1" placeholder="30">
+        </div>
+
+        <button type="submit">Сократить</button>
+    </form>
+
+    <div th:if="${shortUrl}">
+        <div class="success">
+            <p>Ваша короткая ссылка: <a th:href="${shortUrl}" th:text="${shortUrl}"></a></p>
+        </div>
+        <a class="stats-link" th:href="@{'/stats/' + ${shortUrl.substring(shortUrl.lastIndexOf('/') + 1)}}">
+            Посмотреть статистику
+        </a>
+    </div>
 </div>
 </body>
 </html>

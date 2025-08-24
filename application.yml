@@ -1,0 +1,32 @@
+app:
+  base-url: http://localhost:8080/
+  link:
+    length: 7
+    default-expiration-days: 30
+  ip-api:
+    enabled: true
+    url: http://ip-api.com/json/
+    timeout-ms: 2000
+    batch-size: 100
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/url_shortener
+    username: root
+    password: your_password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: true
+  scheduling:
+    enabled: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.example.urlshortener: DEBUG
