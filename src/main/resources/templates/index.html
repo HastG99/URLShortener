@@ -1,0 +1,20 @@
+<!-- src/main/resources/templates/index.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>URL Shortener</title>
+</head>
+<body>
+<h1>Сократить ссылку</h1>
+<form method="post" action="/create">
+    <input type="url" name="originalUrl" placeholder="Введите длинную ссылку" required>
+    <button type="submit">Сократить</button>
+</form>
+
+<div th:if="${shortUrl}">
+    <h3>Ваша короткая ссылка:</h3>
+    <a th:href="${shortUrl}" th:text="${shortUrl}"></a>
+</div>
+</body>
+</html>

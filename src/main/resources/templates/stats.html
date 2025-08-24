@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Статистика переходов</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .stats-header { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+<div class="stats-header">
+    <h1>Статистика переходов</h1>
+    <p><strong>Оригинальная ссылка:</strong> <span th:text="${link.originalUrl}"></span></p>
+    <p><strong>Короткий код:</strong> <span th:text="${link.shortCode}"></span></p>
+    <p><strong>Всего переходов:</strong> <span th:text="${link.clickCount}"></span></p>
+    <p><strong>Уникальных посетителей:</strong> <span th:text="${visitorCount}"></span></p>
+</div>
+
+<h2>История переходов</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Время</th>
+        <th>IP адрес</th>
+        <th>Устройство</th>
+        <th>ОС</th>
+        <th>Браузер</th>
+        <th>Источник</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="visitor : ${visitors}">
+        <td th:text="${#dates.format(visitor.visitedAt, 'dd.MM.yyyy HH:mm')}"></td>
+        <td th:text="${visitor.ipAddress}"></td>
+        <td th:text="${visitor.deviceType}"></td>
+        <td th:text="${visitor.operatingSystem}"></td>
+        <td th:text="${visitor.browser}"></td>
+        <td th:text="${visitor.referrer} ?: 'Прямой переход'"></td>
+    </tr>
+    </tbody>
+</table>
+
+<br>
+<a href="/">Вернуться на главную</a>
+</body>
+</html>
