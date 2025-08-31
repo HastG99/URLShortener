@@ -14,6 +14,7 @@ A powerful and feature-rich URL shortener service built with Spring Boot. This a
 - **Referrer Tracking**: Identify traffic sources
 - **Cleanup Service**: Automatic removal of expired links
 - **RESTful API**: Simple API for integration
+- **Docker Support**: Easy deployment with Docker containers
 
 ![Analytics Dashboard Image 1](images/stats1.png)
 ![Analytics Dashboard Image 2](images/stats2.png)
@@ -25,6 +26,7 @@ A powerful and feature-rich URL shortener service built with Spring Boot. This a
 - **Templating**: Thymeleaf
 - **Testing**: JUnit, Mockito
 - **Build Tool**: Maven
+- **Containerization**: Docker, Docker Compose
 - **Other**: Lombok, User Agent Analysis, IP Geolocation
 
 ## Quick Start
@@ -33,6 +35,7 @@ A powerful and feature-rich URL shortener service built with Spring Boot. This a
 - Java 17+
 - MySQL 5.7+
 - Maven 3.6+
+- **OR** Docker and Docker Compose
 
 ### Installation
 
@@ -57,6 +60,90 @@ mvn spring-boot:run
 ```
 
 4. Access the application at `http://localhost:8080`
+
+## Docker Deployment
+
+### Prerequisites
+- Docker installed
+- Docker Compose installed
+
+### Quick Start with Docker
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/URLShortener.git
+cd URLShortener
+```
+
+2. Build and start containers:
+```bash
+docker-compose up --build
+```
+
+3. Access the application at `http://localhost:8080`
+
+### Docker Commands
+
+**Start services:**
+```bash
+docker-compose up -d
+```
+
+**Stop services:**
+```bash
+docker-compose down
+```
+
+**Stop and remove volumes:**
+```bash
+docker-compose down -v
+```
+
+**View logs:**
+```bash
+docker-compose logs
+docker-compose logs app  # logs only for app container
+```
+
+**Rebuild and restart:**
+```bash
+docker-compose up --build -d
+```
+
+### Docker Configuration
+
+The Docker setup includes:
+- **MySQL 8.0** container with persistent storage
+- **Spring Boot application** container
+- Automatic database initialization
+- Health checks for proper startup order
+- Network isolation between containers
+
+### Environment Variables
+
+Key environment variables for Docker deployment:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SPRING_DATASOURCE_URL` | MySQL connection URL | `jdbc:mysql://mysql:3306/url_shortener` |
+| `SPRING_DATASOURCE_USERNAME` | Database username | `appuser` |
+| `SPRING_DATASOURCE_PASSWORD` | Database password | `apppassword` |
+| `APP_BASE_URL` | Base URL for short links | `http://localhost:8080` |
+
+### Customizing Docker Deployment
+
+To customize the deployment, create a `.env` file:
+
+```env
+APP_BASE_URL=http://your-domain.com
+SPRING_DATASOURCE_USERNAME=custom_user
+SPRING_DATASOURCE_PASSWORD=custom_password
+```
+
+Then run:
+```bash
+docker-compose --env-file .env up -d
+```
 
 ## Usage
 
@@ -92,6 +179,11 @@ mvn test
 ### Building
 ```bash
 mvn clean package
+```
+
+### Building Docker Image
+```bash
+docker build -t url-shortener .
 ```
 
 ## License
